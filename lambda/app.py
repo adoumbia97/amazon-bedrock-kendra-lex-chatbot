@@ -13,22 +13,35 @@ from langchain.prompts import PromptTemplate
 
 REGION_NAME = os.environ['aws_region']
 
-retriever = AmazonKendraRetriever(
-    index_id=os.environ['kendra_index_id'],
-    region_name=REGION_NAME
+## Env variable
+os.environ["PINECONE_API_KEY"] = "afa6f99c-c782-4d4e-a87b-0cddeac3c64a"
+OPENAI_API_KEY = "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"
+os.environ["OPENAI_API_KEY"]=OPENAI_API_KEY
+
+from pinecone import Pinecone
+pc = Pinecone(
+    api_key=os.environ.get("PINECONE_API_KEY")
 )
 
-llm_jurassic_ultra = Bedrock(
-    model_id="ai21.j2-ultra-v1",
-    endpoint_url="https://bedrock-runtime." + REGION_NAME + ".amazonaws.com",
-    model_kwargs={"temperature": 0.7, "maxTokens": 500, "numResults": 1}
-)
+index=pc.Index("llm3")
 
-llm_jurassic_mid = Bedrock(
-    model_id="ai21.j2-mid-v1",
-    endpoint_url="https://bedrock-runtime." + REGION_NAME + ".amazonaws.com",
-    model_kwargs={"temperature": 0.7, "maxTokens": 300, "numResults": 1}
-)
+from langchain_pinecone import Pinecone
+from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAI
+
+#REGION_NAME = os.environ['aws_region']
+
+# replacement of retriever
+embed=OpenAIEmbeddings()
+text_field = "text"
+vectorstore=Pinecone(index,embed, text_field )
+retriever=vectorstore.as_retriever()
+
+
+
+llm_jurassic_ultra=OpenAI(model="gpt-3.5-turbo-instruct")
+#
+llm_jurassic_mid=OpenAI()
 
 #Create template for combining chat history and follow up question into a standalone question.
 question_generator_chain_template = """
